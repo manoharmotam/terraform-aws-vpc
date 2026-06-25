@@ -49,3 +49,11 @@ variable "database_subnet_tags" {
 variable "rt_tags"{
     default = {}
 }
+
+variable "eip_tags" {
+  default = {}
+}
+
+variable "ngw_tags" {
+  default = {}
+}

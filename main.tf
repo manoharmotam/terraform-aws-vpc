@@ -6,12 +6,12 @@ resource "aws_vpc" "main" {
     instance_tenancy = "default"
     
 
-    # tags = merge(var.vpc_tags,local.common_name,local.common_tags)
+    tags = merge(var.vpc_tags,local.common_tags)
 }
 
 resource "aws_internet_gateway" "main" {
     vpc_id = aws_vpc.main.id
-    # tags = merge(local.common_name,local.common_tags)
+    tags = local.common_tags
 }
 
 resource "aws_subnet" "public_subnet" {
@@ -20,7 +20,11 @@ resource "aws_subnet" "public_subnet" {
   cidr_block = var.public_subnet_cidr[count.index]
   availability_zone = local.azs[count.index]
   map_public_ip_on_launch = true
-#   tags = merge(local.common_name,local.common_tags)
+  tags = merge(var.public_subnet_tags,local.common_tags,
+        {
+            Name = "${local.common_name}-public-${split("-",local.azs[count.index])[2]}"
+        }
+    )
 }
 
 resource "aws_subnet" "private_subnet" {
@@ -29,7 +33,11 @@ resource "aws_subnet" "private_subnet" {
   cidr_block = var.private_subnet_cidr[count.index]
   availability_zone = local.azs[count.index]
   map_public_ip_on_launch = false
-#   tags = merge(local.common_name,local.common_tags)
+  tags = merge(var.private_subnet_tags,local.common_tags,
+        {
+            Name = "${local.common_name}-private-${split("-",local.azs[count.index])[2]}"
+        }
+    )
 }
 
 resource "aws_subnet" "database_subnet" {
@@ -38,19 +46,27 @@ resource "aws_subnet" "database_subnet" {
   cidr_block = var.database_subnet_cidr[count.index]
   availability_zone = local.azs[count.index]
   map_public_ip_on_launch = false
-#   tags = merge(local.common_name,local.common_tags)
+  tags = merge(var.database_subnet_tags,local.common_tags,
+        {
+            Name = "${local.common_name}-database-${split("-",local.azs[count.index])[2]}"
+        }
+    )
 }
 
 resource "aws_route_table" "public" {
     vpc_id = aws_vpc.main.id
+
+    tags = {Name = "${local.common_name}-public"}
 }
 
 resource "aws_route_table" "private" {
     vpc_id = aws_vpc.main.id
+    tags = {Name = "${local.common_name}-private"}
 }
 
 resource "aws_route_table" "database" {
     vpc_id = aws_vpc.main.id
+    tags = {Name = "${local.common_name}-database"}
 }
 
 resource "aws_route_table_association" "public" {
@@ -73,11 +89,23 @@ resource "aws_route_table_association" "database" {
 
 resource "aws_eip" "nat" {
     domain = "vpc"
+
+    tags = merge(var.eip_tags,
+            {
+                Name = "${local.common_name}"
+            }
+        )
 }
 
 resource "aws_nat_gateway" "nat" {
     allocation_id = aws_eip.nat.id
     subnet_id = aws_subnet.public_subnet[0].id
+
+    tags = merge( var.ngw_tags,
+        {
+            Name = "${local.common_name}"
+        }
+    )
 
     depends_on = [ aws_internet_gateway.main ]
 }
