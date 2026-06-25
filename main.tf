@@ -56,17 +56,17 @@ resource "aws_subnet" "database_subnet" {
 resource "aws_route_table" "public" {
     vpc_id = aws_vpc.main.id
 
-    tags = {Name = "${local.common_name}-public"}
+    tags = merge(var.rt_tags,{Name = "${local.common_name}-public"})
 }
 
 resource "aws_route_table" "private" {
     vpc_id = aws_vpc.main.id
-    tags = {Name = "${local.common_name}-private"}
+    tags = merge(var.rt_tags,{Name = "${local.common_name}-private"})
 }
 
 resource "aws_route_table" "database" {
     vpc_id = aws_vpc.main.id
-    tags = {Name = "${local.common_name}-database"}
+    tags = merge(var.rt_tags,{Name = "${local.common_name}-database"})
 }
 
 resource "aws_route_table_association" "public" {
