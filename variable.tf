@@ -75,7 +75,7 @@ variable "ngw_tags" {
 
 variable "is_peering_needed" {
   type    = bool
-  default = true
+  default = false
 }
 
 variable "vpc_peering_tags" {
