@@ -28,6 +28,7 @@ resource "aws_subnet" "private_subnet" {
   vpc_id = aws_vpc.main.id
   cidr_block = var.private_subnet_cidr[count.index]
   availability_zone = local.azs[count.index]
+  map_public_ip_on_launch = false
 #   tags = merge(local.common_name,local.common_tags)
 }
 
@@ -36,6 +37,7 @@ resource "aws_subnet" "database_subnet" {
   vpc_id = aws_vpc.main.id
   cidr_block = var.database_subnet_cidr[count.index]
   availability_zone = local.azs[count.index]
+  map_public_ip_on_launch = false
 #   tags = merge(local.common_name,local.common_tags)
 }
 
@@ -95,5 +97,5 @@ resource "aws_route" "private" {
 resource "aws_route" "database" {
   route_table_id = aws_route_table.database.id
   destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id = aws_internet_gateway.main.id
+  nat_gateway_id = aws_nat_gateway.nat.id
 }
