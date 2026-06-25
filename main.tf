@@ -1,129 +1,129 @@
 resource "aws_vpc" "main" {
-    region = var.region
-    cidr_block = var.vpc_cidr
-    enable_dns_hostnames = true
-    enable_dns_support = true
-    instance_tenancy = "default"
-    
+  region               = var.region
+  cidr_block           = var.vpc_cidr
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+  instance_tenancy     = "default"
 
-    tags = merge(var.vpc_tags,local.common_tags)
+
+  tags = merge(var.vpc_tags, local.common_tags)
 }
 
 resource "aws_internet_gateway" "main" {
-    vpc_id = aws_vpc.main.id
-    tags = local.common_tags
+  vpc_id = aws_vpc.main.id
+  tags   = local.common_tags
 }
 
 resource "aws_subnet" "public_subnet" {
-  count = length(var.public_subnet_cidr)
-  vpc_id = aws_vpc.main.id
-  cidr_block = var.public_subnet_cidr[count.index]
-  availability_zone = local.azs[count.index]
+  count                   = length(var.public_subnet_cidr)
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.public_subnet_cidr[count.index]
+  availability_zone       = local.azs[count.index]
   map_public_ip_on_launch = true
-  tags = merge(var.public_subnet_tags,local.common_tags,
-        {
-            Name = "${local.common_name}-public-${split("-",local.azs[count.index])[2]}"
-        }
-    )
+  tags = merge(var.public_subnet_tags, local.common_tags,
+    {
+      Name = "${local.common_name}-public-${split("-", local.azs[count.index])[2]}"
+    }
+  )
 }
 
 resource "aws_subnet" "private_subnet" {
-  count = length(var.private_subnet_cidr)
-  vpc_id = aws_vpc.main.id
-  cidr_block = var.private_subnet_cidr[count.index]
-  availability_zone = local.azs[count.index]
+  count                   = length(var.private_subnet_cidr)
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.private_subnet_cidr[count.index]
+  availability_zone       = local.azs[count.index]
   map_public_ip_on_launch = false
-  tags = merge(var.private_subnet_tags,local.common_tags,
-        {
-            Name = "${local.common_name}-private-${split("-",local.azs[count.index])[2]}"
-        }
-    )
+  tags = merge(var.private_subnet_tags, local.common_tags,
+    {
+      Name = "${local.common_name}-private-${split("-", local.azs[count.index])[2]}"
+    }
+  )
 }
 
 resource "aws_subnet" "database_subnet" {
-  count = length(var.database_subnet_cidr)
-  vpc_id = aws_vpc.main.id
-  cidr_block = var.database_subnet_cidr[count.index]
-  availability_zone = local.azs[count.index]
+  count                   = length(var.database_subnet_cidr)
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.database_subnet_cidr[count.index]
+  availability_zone       = local.azs[count.index]
   map_public_ip_on_launch = false
-  tags = merge(var.database_subnet_tags,local.common_tags,
-        {
-            Name = "${local.common_name}-database-${split("-",local.azs[count.index])[2]}"
-        }
-    )
+  tags = merge(var.database_subnet_tags, local.common_tags,
+    {
+      Name = "${local.common_name}-database-${split("-", local.azs[count.index])[2]}"
+    }
+  )
 }
 
 resource "aws_route_table" "public" {
-    vpc_id = aws_vpc.main.id
+  vpc_id = aws_vpc.main.id
 
-    tags = merge(var.rt_tags,{Name = "${local.common_name}-public"})
+  tags = merge(var.rt_tags, { Name = "${local.common_name}-public" })
 }
 
 resource "aws_route_table" "private" {
-    vpc_id = aws_vpc.main.id
-    tags = merge(var.rt_tags,{Name = "${local.common_name}-private"})
+  vpc_id = aws_vpc.main.id
+  tags   = merge(var.rt_tags, { Name = "${local.common_name}-private" })
 }
 
 resource "aws_route_table" "database" {
-    vpc_id = aws_vpc.main.id
-    tags = merge(var.rt_tags,{Name = "${local.common_name}-database"})
+  vpc_id = aws_vpc.main.id
+  tags   = merge(var.rt_tags, { Name = "${local.common_name}-database" })
 }
 
 resource "aws_route_table_association" "public" {
-  count = length(var.public_subnet_cidr)
-  subnet_id = aws_subnet.public_subnet[count.index].id
+  count          = length(var.public_subnet_cidr)
+  subnet_id      = aws_subnet.public_subnet[count.index].id
   route_table_id = aws_route_table.public.id
 }
 
 resource "aws_route_table_association" "private" {
-  count = length(var.private_subnet_cidr)
-  subnet_id = aws_subnet.private_subnet[count.index].id
+  count          = length(var.private_subnet_cidr)
+  subnet_id      = aws_subnet.private_subnet[count.index].id
   route_table_id = aws_route_table.private.id
 }
 
 resource "aws_route_table_association" "database" {
-  count = length(var.database_subnet_cidr)
-  subnet_id = aws_subnet.database_subnet[count.index].id
+  count          = length(var.database_subnet_cidr)
+  subnet_id      = aws_subnet.database_subnet[count.index].id
   route_table_id = aws_route_table.database.id
 }
 
 resource "aws_eip" "nat" {
-    domain = "vpc"
+  domain = "vpc"
 
-    tags = merge(var.eip_tags,
-            {
-                Name = "${local.common_name}"
-            }
-        )
+  tags = merge(var.eip_tags,
+    {
+      Name = "${local.common_name}"
+    }
+  )
 }
 
 resource "aws_nat_gateway" "nat" {
-    allocation_id = aws_eip.nat.id
-    subnet_id = aws_subnet.public_subnet[0].id
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public_subnet[0].id
 
-    tags = merge( var.ngw_tags,
-        {
-            Name = "${local.common_name}"
-        }
-    )
+  tags = merge(var.ngw_tags,
+    {
+      Name = "${local.common_name}"
+    }
+  )
 
-    depends_on = [ aws_internet_gateway.main ]
+  depends_on = [aws_internet_gateway.main]
 }
 
 resource "aws_route" "public" {
-  route_table_id = aws_route_table.public.id
+  route_table_id         = aws_route_table.public.id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id = aws_internet_gateway.main.id
+  gateway_id             = aws_internet_gateway.main.id
 }
 
 resource "aws_route" "private" {
-  route_table_id = aws_route_table.private.id
+  route_table_id         = aws_route_table.private.id
   destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id = aws_nat_gateway.nat.id
+  nat_gateway_id         = aws_nat_gateway.nat.id
 }
 
 resource "aws_route" "database" {
-  route_table_id = aws_route_table.database.id
+  route_table_id         = aws_route_table.database.id
   destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id = aws_nat_gateway.nat.id
+  nat_gateway_id         = aws_nat_gateway.nat.id
 }

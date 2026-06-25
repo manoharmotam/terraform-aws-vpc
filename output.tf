@@ -17,3 +17,7 @@ output "database_subnet_ids" {
 output "eip" {
   value = aws_eip.nat.public_ip
 }
+
+output "aws_vpc_default" {
+  value = data.aws_vpc.default.id
+}
