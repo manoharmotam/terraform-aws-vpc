@@ -6,7 +6,7 @@ resource "aws_vpc" "main" {
   instance_tenancy     = "default"
 
 
-  tags = merge(var.vpc_tags, local.common_tags)
+  tags = merge(local.common_tags, var.vpc_tags)
 }
 
 resource "aws_internet_gateway" "main" {
